@@ -1,0 +1,15 @@
+br\com\feedbackprodutos\controller\FeedbackController.class
+br\com\feedbackprodutos\model\Produto.class
+br\com\feedbackprodutos\controller\ProdrutoController.class
+br\com\feedbackprodutos\dao\ProdutoDAO.class
+br\com\feedbackprodutos\service\UsuarioService.class
+br\com\feedbackprodutos\service\FeedbackService.class
+br\com\feedbackprodutos\dao\FeedbackDAO.class
+br\com\feedbackprodutos\model\Usuario.class
+br\com\feedbackprodutos\service\ProdutoService.class
+br\com\feedbackprodutos\config\ConnectionFactory.class
+br\com\feedbackprodutos\dao\UsuarioDAO.class
+br\com\feedbackprodutos\model\Feedback.class
+MensagemUtil.class
+br\com\feedbackprodutos\controller\UsuarioController.class
+br\com\feedbackprodutos\config\TesteConexao.class
