@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+
+  db:
+    image: mysql:8.0
+    container_name: feedback_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: feedback_db
+      MYSQL_USER: feedback_user
+      MYSQL_PASSWORD: feedback_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+
+  web:
+    build: .
+    container_name: feedback_app
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+
+      DB_URL: jdbc:mysql://db:3306/feedback_db?useSSL=false&allowPublicKeyRetrieval=true
+      DB_USER: feedback_user
+      DB_PASSWORD: feedback_password
+
+volumes:
+  db_data:
