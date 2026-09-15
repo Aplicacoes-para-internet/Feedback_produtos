@@ -35,20 +35,14 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>feedback-produtos/src/main/java</sourceDirectory>
-        <resources>
-            <resource>
-                <directory>feedback-produtos/src/main/resources</directory>
-            </resource>
-        </resources>
         <finalName>${project.build.finalName}</finalName>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
                 <version>3.4.0</version>
                 <configuration>
-                    <warSourceDirectory>feedback-produtos/src/main/webapp</warSourceDirectory>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                 </configuration>
             </plugin>
