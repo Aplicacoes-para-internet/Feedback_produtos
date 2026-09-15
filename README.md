@@ -49,10 +49,36 @@ Na primeira execução, o Docker irá preparar automaticamente:
 - Tomcat
 - Aplicação web
 
+O projeto possui uma estrutura em que o código-fonte da aplicação fica dentro da pasta `feedback-produtos/src`, enquanto o `pom.xml`, `Dockerfile` e `docker-compose.yml` ficam na raiz do repositório.
+
+O `Dockerfile` copia `feedback-produtos/src` para a estrutura padrão `src` do projeto Maven durante a etapa de build. O `pom.xml` utiliza essa estrutura padrão para localizar as classes Java, recursos e páginas JSP.
+
+### 🌐 Acessando a aplicação
+
 Depois que os containers forem iniciados, acesse no navegador:
 
 ```text
-http://localhost:8080/feedback-produtos/index.jsp
+http://localhost:8080/
+```
+
+A aplicação é publicada como `ROOT.war` no Tomcat. Por isso, **não é necessário colocar `/feedback-produtos` na URL**.
+
+A página inicial da aplicação está em:
+
+```text
+feedback-produtos/src/main/webapp/index.jsp
+```
+
+Portanto, a URL correta é:
+
+```text
+http://localhost:8080/
+```
+
+ou:
+
+```text
+http://localhost:8080/index.jsp
 ```
 
 ## 🗄️ Banco de dados
@@ -165,15 +191,13 @@ Depois que o projeto já tiver sido criado, normalmente basta executar:
 docker compose up
 ```
 
-Não é necessário utilizar `--build` todas as vezes.
-
 Use:
 
 ```bash
 docker compose up --build
 ```
 
-quando houver alterações que precisem reconstruir a imagem da aplicação.
+quando houver alterações no código ou nos arquivos de configuração que precisem reconstruir a imagem da aplicação.
 
 ## ⚠️ Recriando o banco de dados
 
