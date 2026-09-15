@@ -52,7 +52,7 @@ Na primeira execução, o Docker irá preparar automaticamente:
 Depois que os containers forem iniciados, acesse no navegador:
 
 ```text
-http://localhost:8080](http://localhost:8080/Feedback_produtos/
+http://localhost:8080/Feedback_produtos/
 ```
 
 ## 🗄️ Banco de dados
