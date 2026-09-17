@@ -45,6 +45,38 @@ public class ProdutoDAO {
 		}
 	}
 
+	public boolean atualizar(Produto produto) throws SQLException {
+		String sql = "UPDATE Produtos SET nome = ?, descricao = ?, preco = ? WHERE id = ?";
+		try (Connection conexao = ConnectionFactory.getConnection();
+			 PreparedStatement comando = conexao.prepareStatement(sql)) {
+			comando.setString(1, produto.getNome());
+			comando.setString(2, produto.getDescricao());
+			comando.setDouble(3, produto.getPreco());
+			comando.setInt(4, produto.getId());
+			return comando.executeUpdate() > 0;
+		}
+	}
+
+	public boolean excluir(int id) throws SQLException {
+		String sql = "DELETE FROM Produtos WHERE id = ?";
+		try (Connection conexao = ConnectionFactory.getConnection();
+			 PreparedStatement comando = conexao.prepareStatement(sql)) {
+			comando.setInt(1, id);
+			return comando.executeUpdate() > 0;
+		}
+	}
+
+	public boolean possuiFeedbackVinculado(int idProduto) throws SQLException {
+		String sql = "SELECT 1 FROM Feedback WHERE produto_id = ? LIMIT 1";
+		try (Connection conexao = ConnectionFactory.getConnection();
+			 PreparedStatement comando = conexao.prepareStatement(sql)) {
+			comando.setInt(1, idProduto);
+			try (ResultSet resultado = comando.executeQuery()) {
+				return resultado.next();
+			}
+		}
+	}
+
 	private Produto mapear(ResultSet resultado) throws SQLException {
 		return new Produto(resultado.getInt("id"), resultado.getString("nome"),
 				resultado.getString("descricao"), resultado.getDouble("preco"));

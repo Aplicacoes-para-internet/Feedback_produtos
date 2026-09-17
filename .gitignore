@@ -1,1 +1,3 @@
 feedback-produtos/src/main/resources/db.properties
+target/
+*.war

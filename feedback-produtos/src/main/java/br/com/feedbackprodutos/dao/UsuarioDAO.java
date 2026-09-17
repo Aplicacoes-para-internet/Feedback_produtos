@@ -42,6 +42,54 @@ public class UsuarioDAO {
 		}
 	}
 
+	public boolean atualizar(Usuario usuario) throws SQLException {
+		String sql = "UPDATE Usuarios SET nome = ?, email = ? WHERE id = ?";
+		try (Connection conexao = ConnectionFactory.getConnection();
+			 PreparedStatement comando = conexao.prepareStatement(sql)) {
+			comando.setString(1, usuario.getNome());
+			comando.setString(2, usuario.getEmail());
+			comando.setInt(3, usuario.getId());
+			return comando.executeUpdate() > 0;
+		}
+	}
+
+	public boolean excluir(int id) throws SQLException {
+		String sql = "DELETE FROM Usuarios WHERE id = ?";
+		try (Connection conexao = ConnectionFactory.getConnection();
+			 PreparedStatement comando = conexao.prepareStatement(sql)) {
+			comando.setInt(1, id);
+			return comando.executeUpdate() > 0;
+		}
+	}
+
+	public boolean possuiFeedbackVinculado(int idUsuario) throws SQLException {
+		String sql = "SELECT 1 FROM Feedback WHERE usuario_id = ? LIMIT 1";
+		try (Connection conexao = ConnectionFactory.getConnection();
+			 PreparedStatement comando = conexao.prepareStatement(sql)) {
+			comando.setInt(1, idUsuario);
+			try (ResultSet resultado = comando.executeQuery()) {
+				return resultado.next();
+			}
+		}
+	}
+
+	public boolean existeEmail(String email, Integer idIgnorado) throws SQLException {
+		String sql = "SELECT id FROM Usuarios WHERE email = ?";
+		if (idIgnorado != null) {
+			sql += " AND id <> ?";
+		}
+		try (Connection conexao = ConnectionFactory.getConnection();
+			 PreparedStatement comando = conexao.prepareStatement(sql)) {
+			comando.setString(1, email);
+			if (idIgnorado != null) {
+				comando.setInt(2, idIgnorado);
+			}
+			try (ResultSet resultado = comando.executeQuery()) {
+				return resultado.next();
+			}
+		}
+	}
+
 	private Usuario mapear(ResultSet resultado) throws SQLException {
 		return new Usuario(resultado.getInt("id"), resultado.getString("nome"), resultado.getString("email"));
 	}

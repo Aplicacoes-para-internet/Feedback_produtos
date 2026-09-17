@@ -1,53 +1,19 @@
 # Feedback de Produtos
 
-Este é um projeto acadêmico desenvolvido para permitir o cadastro de produtos e usuários, além do envio e visualização de feedbacks sobre os produtos.
+Projeto acadêmico em Java com arquitetura MVC, separação em camadas de Model, View, Controller, Service e DAO, usando MySQL como banco de dados e Docker para execução.
 
-O projeto foi desenvolvido utilizando Java 17, JSP, Servlets, MVC, DAO, Service, Maven, Tomcat e MySQL.
+## Tecnologias
 
-## 🚀 Como executar o projeto
-
-A forma mais simples de executar o projeto é utilizando o Docker.
-
-### Pré-requisitos
-
-Antes de começar, é necessário ter:
-
-- Docker Desktop instalado
-- Git instalado
-
-Não é necessário instalar Java, Maven, Tomcat ou MySQL separadamente, pois o projeto utiliza containers Docker para executar esses serviços.
-
-## 📥 Baixando o projeto
-
-Abra o terminal e execute:
-
-```bash
-git clone https://github.com/Aplicacoes-para-internet/Feedback_produtos.git
-```
-
-Entre na pasta do projeto:
-
-```bash
-cd Feedback_produtos
-```
-
-## 🐳 Executando com Docker
-
-Com o Docker Desktop aberto, execute:
-
-```bash
-docker compose up --build
-```
-
-Na primeira execução, o Docker irá preparar automaticamente:
-
+- Java 17
+- JSP
+- Servlets
+- MVC
+- DAO
+- Service
 - MySQL
-- Banco de dados
-- Tabelas do sistema
-- Java
 - Maven
 - Tomcat
-- Aplicação web
+- Docker
 
 O projeto possui uma estrutura em que o código-fonte da aplicação fica dentro da pasta `feedback-produtos/src`, enquanto o `pom.xml`, `Dockerfile` e `docker-compose.yml` ficam na raiz do repositório.
 
@@ -81,142 +47,122 @@ ou:
 http://localhost:8080/index.jsp
 ```
 
-## 🗄️ Banco de dados
+## Funcionalidades implementadas
 
-O projeto utiliza MySQL.
+O sistema possui CRUD completo e validado em execução para as três entidades principais:
 
-O banco de dados é criado automaticamente pelo Docker a partir do arquivo:
+- Feedback
+  - criar
+  - listar
+  - editar
+  - excluir
+- Usuários
+  - cadastrar
+  - listar
+  - editar
+  - excluir
+- Produtos
+  - cadastrar
+  - listar
+  - editar
+  - excluir
 
-```text
-schema.sql
-```
+Além disso, o sistema aplica regras de integridade:
 
-As configurações utilizadas pelo projeto são:
+- não permite excluir usuário com feedback vinculado
+- não permite excluir produto com feedback vinculado
+- valida e-mail duplicado para usuários
+- valida campos obrigatórios e formatos básicos
 
-```text
-Banco: feedback_db
-Usuário: feedback_user
-Senha: feedback_password
-MySQL: porta 3306 dentro do container
-```
-
-Para evitar conflitos com instalações locais do MySQL, a porta utilizada pelo computador é:
-
-```text
-3307
-```
-
-A aplicação Java continua acessando o MySQL internamente pela porta 3306.
-
-## 📂 Estrutura do projeto
+## Estrutura do projeto
 
 ```text
 Feedback_produtos/
-│
 ├── Dockerfile
 ├── docker-compose.yml
 ├── pom.xml
 ├── schema.sql
 ├── README.md
-│
 └── feedback-produtos/
     └── src/
-        └── main/
-            ├── java/
-            │   └── br/com/feedbackprodutos/
-            │       ├── config/
-            │       ├── controller/
-            │       ├── dao/
-            │       ├── model/
-            │       ├── service/
-            │       └── util/
-            │
-            ├── resources/
-            │   ├── db.properties
-            │   └── db.properties.example
-            │
-            └── webapp/
-                ├── WEB-INF/
-                ├── css/
-                ├── feedback/
-                ├── produto/
-                ├── usuario/
-                └── index.jsp
+        ├── main/
+        │   ├── java/
+        │   │   └── br/com/feedbackprodutos/
+        │   │       ├── config/
+        │   │       ├── controller/
+        │   │       ├── dao/
+        │   │       ├── model/
+        │   │       ├── service/
+        │   │       └── util/
+        │   ├── resources/
+        │   │   └── db.properties.example
+        │   └── webapp/
+        │       ├── WEB-INF/
+        │       ├── css/
+        │       ├── feedback/
+        │       ├── produto/
+        │       ├── usuario/
+        │       └── index.jsp
 ```
 
-## 🧩 Tecnologias utilizadas
+## Fluxo da arquitetura
 
-- Java 17
-- Maven
-- JSP
-- Servlets
-- Tomcat 10.1
-- MySQL 8
-- Docker
-- MVC
-- DAO
-- Service
+- View: páginas JSP em src/main/webapp
+- Controller: servlets em controller
+- Service: regras de negócio em service
+- DAO: acesso ao banco em dao
+- Model: entidades em model
 
-## 💬 Funcionalidades
+## Como executar
 
-O sistema permite:
+### Opção 1: Docker
 
-- Cadastrar produtos
-- Listar produtos
-- Cadastrar usuários
-- Listar usuários
-- Enviar feedbacks
-- Listar feedbacks
-- Armazenar os dados no MySQL
+```bash
+docker compose up --build
+```
 
-## 🛑 Para parar o projeto
-
-Para encerrar os containers, pressione:
+Acesse:
 
 ```text
-Ctrl + C
+http://localhost:8080
 ```
 
-Ou, em outro terminal dentro da pasta do projeto:
+### Opção 2: Maven local
 
 ```bash
-docker compose down
+mvn clean package
 ```
 
-## 🔄 Para executar novamente
+Em seguida, publique o WAR em um container Tomcat local ou em ambiente de execução compatível.
 
-Depois que o projeto já tiver sido criado, normalmente basta executar:
+## Banco de dados
 
-```bash
-docker compose up
-```
+O banco é inicializado pelo arquivo schema.sql.
 
-Use:
+Estrutura principal:
 
-```bash
-docker compose up --build
-```
+- Produtos
+- Usuarios
+- Feedback
 
-quando houver alterações no código ou nos arquivos de configuração que precisem reconstruir a imagem da aplicação.
+Relacionamentos:
 
-## ⚠️ Recriando o banco de dados
+- Feedback referencia produto_id e usuario_id
+- A exclusão de produto ou usuário com feedback vinculado é bloqueada pela camada de serviço
 
-Caso seja necessário apagar o banco e criá-lo novamente utilizando o `schema.sql`, execute:
+Use `docker compose up --build` quando houver alterações no código ou nos arquivos de configuração que precisem reconstruir a imagem da aplicação.
 
-```bash
-docker compose down -v
-```
+## Observações de validação
 
-Depois:
+A aplicação foi validada em execução real com Docker. O processo de verificação incluiu:
 
-```bash
-docker compose up --build
-```
+- build do projeto com docker compose up --build
+- inicialização do MySQL e do Tomcat
+- criação, edição e exclusão de usuários
+- criação, edição e exclusão de produtos
+- criação, edição e exclusão de feedback
+- verificação da mensagem de erro ao tentar excluir registros ligados a feedback
 
-**Atenção:** o comando `docker compose down -v` remove o volume do banco e, consequentemente, os dados armazenados nele.
+## Projeto acadêmico
 
-## 👨‍💻 Projeto acadêmico
-
-Projeto desenvolvido para fins acadêmicos na disciplina de Aplicações para Internet.
-
-O objetivo é aplicar na prática conceitos de desenvolvimento web, organização em camadas, banco de dados e utilização de containers.
+Este projeto foi desenvolvido para fins acadêmicos, com foco em MVC, persistência em banco relacional, organização em camadas e validação de regras de negócio.

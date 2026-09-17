@@ -10,7 +10,31 @@ public class FeedbackService {
 
 	public List<Feedback> listar() throws SQLException { return dao.listar(); }
 
+	public Feedback buscarPorId(int id) throws SQLException {
+		validarId(id);
+		return dao.buscarPorId(id);
+	}
+
 	public void salvar(Feedback feedback) throws SQLException {
+		validarFeedback(feedback);
+		dao.salvar(feedback);
+	}
+
+	public void atualizar(Feedback feedback) throws SQLException {
+		validarFeedback(feedback);
+		if (feedback.getId() <= 0 || !dao.atualizar(feedback)) {
+			throw new IllegalArgumentException("Feedback não encontrado.");
+		}
+	}
+
+	public void excluir(int id) throws SQLException {
+		validarId(id);
+		if (!dao.excluir(id)) {
+			throw new IllegalArgumentException("Feedback não encontrado.");
+		}
+	}
+
+	private void validarFeedback(Feedback feedback) {
 		if (feedback == null || feedback.getProduto() == null || feedback.getUsuario() == null) {
 			throw new IllegalArgumentException("Selecione produto e usuário.");
 		}
@@ -20,6 +44,11 @@ public class FeedbackService {
 		if (feedback.getComentario() == null || feedback.getComentario().isBlank()) {
 			throw new IllegalArgumentException("Informe um comentário.");
 		}
-		dao.salvar(feedback);
+	}
+
+	private void validarId(int id) {
+		if (id <= 0) {
+			throw new IllegalArgumentException("Informe um ID de feedback válido.");
+		}
 	}
 }

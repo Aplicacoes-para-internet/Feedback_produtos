@@ -42,6 +42,43 @@ public class FeedbackDAO {
 		}
 	}
 
+	public Feedback buscarPorId(int id) throws SQLException {
+		String sql = "SELECT f.id, f.nota, f.comentario, f.data_envio, "
+				+ "p.id produto_id, p.nome produto_nome, p.descricao produto_descricao, p.preco produto_preco, "
+				+ "u.id usuario_id, u.nome usuario_nome, u.email usuario_email "
+				+ "FROM Feedback f JOIN Produtos p ON p.id = f.produto_id JOIN Usuarios u ON u.id = f.usuario_id "
+				+ "WHERE f.id = ?";
+		try (Connection conexao = ConnectionFactory.getConnection();
+			 PreparedStatement comando = conexao.prepareStatement(sql)) {
+			comando.setInt(1, id);
+			try (ResultSet resultado = comando.executeQuery()) {
+				return resultado.next() ? mapear(resultado) : null;
+			}
+		}
+	}
+
+	public boolean atualizar(Feedback feedback) throws SQLException {
+		String sql = "UPDATE Feedback SET produto_id = ?, usuario_id = ?, nota = ?, comentario = ? WHERE id = ?";
+		try (Connection conexao = ConnectionFactory.getConnection();
+			 PreparedStatement comando = conexao.prepareStatement(sql)) {
+			comando.setInt(1, feedback.getProduto().getId());
+			comando.setInt(2, feedback.getUsuario().getId());
+			comando.setInt(3, feedback.getNota());
+			comando.setString(4, feedback.getComentario());
+			comando.setInt(5, feedback.getId());
+			return comando.executeUpdate() > 0;
+		}
+	}
+
+	public boolean excluir(int id) throws SQLException {
+		String sql = "DELETE FROM Feedback WHERE id = ?";
+		try (Connection conexao = ConnectionFactory.getConnection();
+			 PreparedStatement comando = conexao.prepareStatement(sql)) {
+			comando.setInt(1, id);
+			return comando.executeUpdate() > 0;
+		}
+	}
+
 	private Feedback mapear(ResultSet resultado) throws SQLException {
 		Produto produto = new Produto(resultado.getInt("produto_id"), resultado.getString("produto_nome"),
 				resultado.getString("produto_descricao"), resultado.getDouble("produto_preco"));
