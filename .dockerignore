@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+**/target/
+**/db.properties
+.idea/
+.vscode/
+arquivos-antigos/
+README.md
+DOCKER.md

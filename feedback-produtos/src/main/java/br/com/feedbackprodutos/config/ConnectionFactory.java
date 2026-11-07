@@ -1,59 +1,73 @@
 package br.com.feedbackprodutos.config;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Properties;
 
-public class ConnectionFactory {
+public final class ConnectionFactory {
 
-    private static final Properties PROPRIEDADES = carregarPropriedades();
-    private static final String URL = configurar("DB_URL", "db.url");
-    private static final String USUARIO = configurar("DB_USER", "db.user");
-    private static final String SENHA = configurar("DB_PASSWORD", "db.password");
+    private static final String DEFAULT_URL =
+            "jdbc:mysql://localhost:3306/feedback_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Sao_Paulo";
+    private static final Properties PROPERTIES = loadProperties();
 
-    private static String configurar(String variavelAmbiente, String chave) {
-        String valor = System.getenv(variavelAmbiente);
-        if (valor != null && !valor.isBlank()) {
-            return valor;
-        }
-        return PROPRIEDADES.getProperty(chave, "");
-    }
-
-    private static Properties carregarPropriedades() {
-        Properties propriedades = new Properties();
-        try (InputStream arquivo = ConnectionFactory.class.getClassLoader()
-                .getResourceAsStream("db.properties")) {
-            if (arquivo != null) {
-                propriedades.load(arquivo);
-            }
-        } catch (IOException exception) {
-            throw new ExceptionInInitializerError("Não foi possível carregar db.properties: " + exception.getMessage());
-        }
-        return propriedades;
+    private ConnectionFactory() {
     }
 
     public static Connection getConnection() throws SQLException {
+        String url = setting("DB_URL", "db.url", DEFAULT_URL);
+        String user = setting("DB_USER", "db.user", "");
+        String password = setting("DB_PASSWORD", "db.password", "");
+
+        if (user.isBlank()) {
+            throw new SQLException("Configure DB_USER ou db.user para conectar ao MySQL.");
+        }
+
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (ClassNotFoundException exception) {
             throw new SQLException("Driver MySQL não encontrado no classpath.", exception);
         }
-        return DriverManager.getConnection(URL, USUARIO, SENHA);
+
+        return DriverManager.getConnection(url, user, password);
     }
-    public static void main(String[] args) {
 
-    try (Connection connection = getConnection()) {
-
-        System.out.println("Conexão com o banco realizada com sucesso!");
-
-    } catch (Exception e) {
-
-        System.out.println("Erro ao conectar com o banco.");
-        e.printStackTrace();
+    private static String setting(String environmentVariable, String property, String defaultValue) {
+        String environmentValue = System.getenv(environmentVariable);
+        if (environmentValue != null && !environmentValue.isBlank()) {
+            return environmentValue;
+        }
+        return PROPERTIES.getProperty(property, defaultValue);
     }
-}
 
+    private static Properties loadProperties() {
+        Properties properties = new Properties();
+        String externalConfig = System.getProperty("feedback.db.config");
+
+        if (externalConfig != null && !externalConfig.isBlank()) {
+            try (InputStream input = Files.newInputStream(Path.of(externalConfig))) {
+                properties.load(input);
+            } catch (IOException exception) {
+                throw new ExceptionInInitializerError(
+                        "Não foi possível carregar o arquivo externo de configuração do banco: "
+                                + exception.getMessage());
+            }
+            return properties;
+        }
+
+        try (InputStream input = ConnectionFactory.class.getClassLoader()
+                .getResourceAsStream("db.properties")) {
+            if (input != null) {
+                properties.load(input);
+            }
+        } catch (IOException exception) {
+            throw new ExceptionInInitializerError(
+                    "Não foi possível carregar db.properties: " + exception.getMessage());
+        }
+        return properties;
+    }
 }

@@ -3,17 +3,13 @@ FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 
 COPY pom.xml .
+COPY feedback-produtos/src/ ./feedback-produtos/src/
 
-RUN mvn dependency:go-offline
+RUN mvn --batch-mode clean package -DskipTests
 
-COPY feedback-produtos/src ./src
+FROM tomcat:10.1.59-jdk17-temurin
 
-RUN mvn clean package -DskipTests
-
-
-FROM tomcat:10.1-jdk17-temurin
-
-COPY --from=build /app/target/*.war /usr/local/tomcat/webapps/ROOT.war
+COPY --from=build /app/target/feedback-produtos.war /usr/local/tomcat/webapps/feedback-produtos.war
 
 EXPOSE 8080
 

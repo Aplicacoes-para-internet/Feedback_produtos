@@ -6,47 +6,82 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ProdutoDAO {
-	public List<Produto> listar() throws SQLException {
-		String sql = "SELECT id, nome, descricao, preco FROM Produtos ORDER BY nome";
-		List<Produto> produtos = new ArrayList<>();
-		try (Connection conexao = ConnectionFactory.getConnection();
-			 PreparedStatement comando = conexao.prepareStatement(sql);
-			 ResultSet resultado = comando.executeQuery()) {
-			while (resultado.next()) {
-				produtos.add(mapear(resultado));
-			}
-		}
-		return produtos;
-	}
 
-	public Produto buscarPorId(int id) throws SQLException {
-		String sql = "SELECT id, nome, descricao, preco FROM Produtos WHERE id = ?";
-		try (Connection conexao = ConnectionFactory.getConnection();
-			 PreparedStatement comando = conexao.prepareStatement(sql)) {
-			comando.setInt(1, id);
-			try (ResultSet resultado = comando.executeQuery()) {
-				return resultado.next() ? mapear(resultado) : null;
-			}
-		}
-	}
+    public List<Produto> listar() throws SQLException {
+        String sql = "SELECT id, nome, descricao, preco FROM Produtos ORDER BY nome";
+        List<Produto> produtos = new ArrayList<>();
+        try (Connection conexao = ConnectionFactory.getConnection();
+             PreparedStatement comando = conexao.prepareStatement(sql);
+             ResultSet resultado = comando.executeQuery()) {
+            while (resultado.next()) {
+                produtos.add(mapear(resultado));
+            }
+        }
+        return produtos;
+    }
 
-	public void salvar(Produto produto) throws SQLException {
-		String sql = "INSERT INTO Produtos (nome, descricao, preco) VALUES (?, ?, ?)";
-		try (Connection conexao = ConnectionFactory.getConnection();
-			 PreparedStatement comando = conexao.prepareStatement(sql)) {
-			comando.setString(1, produto.getNome());
-			comando.setString(2, produto.getDescricao());
-			comando.setDouble(3, produto.getPreco());
-			comando.executeUpdate();
-		}
-	}
+    public Produto buscarPorId(int id) throws SQLException {
+        String sql = "SELECT id, nome, descricao, preco FROM Produtos WHERE id = ?";
+        try (Connection conexao = ConnectionFactory.getConnection();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+            comando.setInt(1, id);
+            try (ResultSet resultado = comando.executeQuery()) {
+                return resultado.next() ? mapear(resultado) : null;
+            }
+        }
+    }
 
-	private Produto mapear(ResultSet resultado) throws SQLException {
-		return new Produto(resultado.getInt("id"), resultado.getString("nome"),
-				resultado.getString("descricao"), resultado.getDouble("preco"));
-	}
+    public int salvar(Produto produto) throws SQLException {
+        String sql = "INSERT INTO Produtos (nome, descricao, preco) VALUES (?, ?, ?)";
+        try (Connection conexao = ConnectionFactory.getConnection();
+             PreparedStatement comando = conexao.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            comando.setString(1, produto.getNome());
+            comando.setString(2, produto.getDescricao());
+            comando.setDouble(3, produto.getPreco());
+            comando.executeUpdate();
+            try (ResultSet keys = comando.getGeneratedKeys()) {
+                if (!keys.next()) {
+                    throw new SQLException("O MySQL não retornou o ID do produto criado.");
+                }
+                int id = keys.getInt(1);
+                produto.setId(id);
+                return id;
+            }
+        }
+    }
+
+    public void atualizar(Produto produto) throws SQLException {
+        String sql = "UPDATE Produtos SET nome = ?, descricao = ?, preco = ? WHERE id = ?";
+        try (Connection conexao = ConnectionFactory.getConnection();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+            comando.setString(1, produto.getNome());
+            comando.setString(2, produto.getDescricao());
+            comando.setDouble(3, produto.getPreco());
+            comando.setInt(4, produto.getId());
+            comando.executeUpdate();
+        }
+    }
+
+    public void excluir(int id) throws SQLException {
+        String sql = "DELETE FROM Produtos WHERE id = ?";
+        try (Connection conexao = ConnectionFactory.getConnection();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+            comando.setInt(1, id);
+            comando.executeUpdate();
+        }
+    }
+
+    private Produto mapear(ResultSet resultado) throws SQLException {
+        return new Produto(
+                resultado.getInt("id"),
+                resultado.getString("nome"),
+                resultado.getString("descricao"),
+                resultado.getDouble("preco")
+        );
+    }
 }

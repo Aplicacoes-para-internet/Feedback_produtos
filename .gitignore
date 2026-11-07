@@ -1,1 +1,17 @@
-feedback-produtos/src/main/resources/db.properties
+# Maven and build output, wherever a nested project creates it
+**/target/
+
+# Local database credentials and environment files
+**/db.properties
+**/.env
+**/.env.*
+!.env.example
+
+# IDE and OS files
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.iml
+Thumbs.db
+Desktop.ini
