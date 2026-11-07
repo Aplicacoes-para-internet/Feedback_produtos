@@ -1,6 +1,7 @@
 package br.com.feedbackprodutos.controller;
 
 import br.com.feedbackprodutos.model.Produto;
+import br.com.feedbackprodutos.exception.RegistroNaoEncontradoException;
 import br.com.feedbackprodutos.service.ProdutoService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -17,13 +18,27 @@ public class ProdutoController extends ApiServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException {
         if (!isApiRequest(request)) {
-            try {
-                request.setAttribute("produtos", service.listar());
-            } catch (SQLException exception) {
-                request.setAttribute("erro", "Não foi possível carregar os produtos.");
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            if ("editar".equals(request.getParameter("acao"))) {
+                Integer id = formId(request.getParameter("id"));
+                try {
+                    Produto produto = id == null ? null : service.buscarPorId(id);
+                    if (produto == null) {
+                        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                        request.setAttribute("erro", "Produto não encontrado.");
+                        mostrarLista(request, response);
+                    } else {
+                        request.setAttribute("produtoEditando", produto);
+                        request.getRequestDispatcher("/produto/editar.jsp").forward(request, response);
+                    }
+                } catch (SQLException exception) {
+                    getServletContext().log("Não foi possível carregar o produto para edição.", exception);
+                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                    request.setAttribute("erro", "Não foi possível carregar o produto para edição.");
+                    mostrarLista(request, response);
+                }
+                return;
             }
-            request.getRequestDispatcher("/produto/listar.jsp").forward(request, response);
+            mostrarLista(request, response);
             return;
         }
 
@@ -51,17 +66,109 @@ public class ProdutoController extends ApiServlet {
         }
     }
 
+    private void mostrarLista(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException {
+        try {
+            request.setAttribute("produtos", service.listar());
+        } catch (SQLException exception) {
+            getServletContext().log("Não foi possível carregar os produtos.", exception);
+            request.setAttribute("erro", "Não foi possível carregar os produtos.");
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+        request.getRequestDispatcher("/produto/listar.jsp").forward(request, response);
+    }
+
+    private Integer formId(String value) {
+        if (value == null || !value.matches("[1-9][0-9]*")) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(value);
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException {
         request.setCharacterEncoding("UTF-8");
         if (!isApiRequest(request)) {
+            String acao = request.getParameter("acao");
+            if ("excluir".equals(acao)) {
+                Integer id = formId(request.getParameter("id"));
+                if (id == null) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    request.setAttribute("erro", "ID do produto inválido.");
+                    mostrarLista(request, response);
+                    return;
+                }
+                try {
+                    service.excluir(id);
+                    response.sendRedirect(request.getContextPath() + "/produtos?sucesso=Produto+exclu%C3%ADdo");
+                } catch (RegistroNaoEncontradoException exception) {
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                    request.setAttribute("erro", exception.getMessage());
+                    mostrarLista(request, response);
+                } catch (SQLException exception) {
+                    getServletContext().log("Não foi possível excluir o produto.", exception);
+                    request.setAttribute("erro", exception.getSQLState() != null
+                            && exception.getSQLState().startsWith("23")
+                                    ? "Não é possível excluir este produto porque há avaliações vinculadas."
+                                    : "Não foi possível excluir o produto.");
+                    mostrarLista(request, response);
+                }
+                return;
+            }
+            if ("atualizar".equals(acao)) {
+                Integer id = formId(request.getParameter("id"));
+                if (id == null) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    request.setAttribute("erro", "ID do produto inválido.");
+                    mostrarLista(request, response);
+                    return;
+                }
+                Produto produto;
+                try {
+                    produto = produtoDoFormulario(request);
+                } catch (IllegalArgumentException exception) {
+                    produto = new Produto(id, request.getParameter("nome"),
+                            request.getParameter("descricao"), 0);
+                    request.setAttribute("erro", exception.getMessage());
+                    request.setAttribute("produtoEditando", produto);
+                    request.getRequestDispatcher("/produto/editar.jsp").forward(request, response);
+                    return;
+                }
+                produto.setId(id);
+                try {
+                    service.atualizar(produto);
+                    response.sendRedirect(request.getContextPath() + "/produtos?sucesso=Produto+atualizado");
+                } catch (RegistroNaoEncontradoException exception) {
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                    request.setAttribute("erro", exception.getMessage());
+                    mostrarLista(request, response);
+                } catch (IllegalArgumentException exception) {
+                    request.setAttribute("erro", exception.getMessage());
+                    request.setAttribute("produtoEditando", produto);
+                    request.getRequestDispatcher("/produto/editar.jsp").forward(request, response);
+                } catch (SQLException exception) {
+                    getServletContext().log("Não foi possível atualizar o produto.", exception);
+                    request.setAttribute("erro", "Não foi possível atualizar o produto.");
+                    request.setAttribute("produtoEditando", produto);
+                    request.getRequestDispatcher("/produto/editar.jsp").forward(request, response);
+                }
+                return;
+            }
             try {
                 service.salvar(produtoDoFormulario(request));
                 response.sendRedirect(request.getContextPath() + "/produtos?sucesso=Produto+salvo");
-            } catch (IllegalArgumentException | SQLException exception) {
-                request.setAttribute("erro", "Não foi possível salvar o produto: " + exception.getMessage());
-                doGet(request, response);
+            } catch (IllegalArgumentException exception) {
+                request.setAttribute("erro", exception.getMessage());
+                mostrarLista(request, response);
+            } catch (SQLException exception) {
+                getServletContext().log("Não foi possível salvar o produto.", exception);
+                request.setAttribute("erro", "Não foi possível salvar o produto.");
+                mostrarLista(request, response);
             }
             return;
         }

@@ -1,509 +1,219 @@
-# Feedback de Produtos
+Feedback de Produtos
+Projeto acadêmico | Disciplina: Aplicações para Internet
 
-Aplicação acadêmica de Aplicações para Internet que permite cadastrar produtos e usuários, registrar feedbacks e consultar esses dados por uma API REST. O projeto mantém as páginas JSP existentes e usa MySQL para persistência.
+O Feedback de Produtos é uma aplicação web desenvolvida em Java para organizar produtos, usuários e as avaliações feitas sobre esses produtos. A proposta é reunir, em um único sistema, o cadastro das informações e a consulta dos feedbacks, permitindo acompanhar a opinião dos usuários de forma simples.
 
-## Tecnologias
+O projeto foi construído como atividade prática da disciplina de Aplicações para Internet, com o objetivo de aplicar conceitos de desenvolvimento web, arquitetura MVC, persistência de dados e API REST. Além da interface web com JSP, o sistema disponibiliza endpoints que permitem acessar e manipular os dados em formato JSON.
+1. Objetivo do projeto
+Desenvolver uma aplicação web conectada a um banco de dados relacional, com operações de cadastro, consulta, atualização e exclusão de produtos, usuários e avaliações.
 
-- Java 17
+Na prática, o projeto permite exercitar a separação de responsabilidades entre as camadas da aplicação, a comunicação HTTP e a integração entre Java e MySQL.
+2. Tecnologias utilizadas
+Tecnologia	Utilização no projeto
+Java 17	Linguagem principal da aplicação
+Jakarta Servlet 6.0	Recebimento e tratamento das requisições HTTP
+JSP	Construção das páginas da interface web
+Maven	Gerenciamento de dependências e geração do arquivo WAR
+Apache Tomcat 10.1.59	Servidor de aplicação
+MySQL 8.0	Armazenamento dos dados
+JDBC / MySQL Connector/J	Comunicação entre Java e MySQL
+Jackson	Conversão entre objetos Java e JSON
+Docker e Docker Compose	Execução da aplicação e do banco em containers
 
-- Maven e empacotamento WAR
 
-- JDBC com MySQL Connector/J
+3. Funcionalidades
+O sistema trabalha com três entidades principais:
+- Produtos: cadastro, listagem, consulta por ID, edição e exclusão.
+- Usuários: cadastro, listagem, consulta por ID, edição e exclusão.
+- Avaliações (feedbacks): registro de uma nota de 1 a 5 e de um comentário, associados a um produto e a um usuário; consulta, edição e exclusão.
+As operações CRUD estão disponíveis na API REST. A interface JSP oferece a navegação e o gerenciamento dos registros. Os botões de edição e exclusão pela interface dependem da versão atualizada dessas páginas estar presente no projeto.
 
-- MySQL
-
-- Jakarta Servlet 6.0
-
-- Jackson (JSON e suporte a `LocalDateTime`)
-
-- Apache Tomcat 10.1.59
-
-## Arquitetura
-
-O projeto segue MVC com camadas:
-
-- **Controller** (`controller`): Servlets que recebem requisições HTTP, interpretam JSON, selecionam a operação e definem o status e a resposta.
-
-- **Service** (`service`): aplica validações e regras de negócio antes de chamar a persistência.
-
-- **DAO** (`dao`): executa consultas SQL parametrizadas via JDBC e converte os resultados em Models.
-
-- **Model** (`model`): representa `Produto`, `Usuario` e `Feedback`, usados nas camadas e serializados em JSON.
-
-As rotas JSP existentes continuam disponíveis separadamente das rotas `/api/...`.
-
-## Estrutura do projeto
-
-```text
-
-.
-
+Regras importantes: um e-mail não pode ser repetido; a nota deve estar entre 1 e 5; e uma avaliação deve estar vinculada a um produto e a um usuário existentes. Como o banco utiliza chaves estrangeiras, a exclusão de produtos ou usuários com avaliações associadas pode ser impedida até que essas avaliações sejam removidas.
+4. Organização e arquitetura
+A aplicação segue uma organização baseada em MVC, com separação das responsabilidades:
+- Model: representa as entidades Produto, Usuario e Feedback.
+- Controller: recebe as requisições e direciona o processamento.
+- Service: concentra validações e regras de negócio.
+- DAO: realiza o acesso ao MySQL por meio de JDBC e consultas parametrizadas.
+- View (JSP): apresenta os dados e os formulários ao usuário.
+Essa separação facilita a manutenção do código e evita concentrar regras de negócio diretamente nas páginas.
+Estrutura principal
+Feedback_produtos/
 ├── feedback-produtos/
-
-│   └── src/main/
-
-│       ├── java/br/com/feedbackprodutos/
-
-│       │   ├── config/       # conexão JDBC e teste de conexão
-
-│       │   ├── controller/   # Servlets MVC e API
-
-│       │   ├── dao/          # acesso JDBC a Produtos, Usuarios e Feedback
-
-│       │   ├── exception/    # exceção de registro não encontrado
-
-│       │   ├── model/        # Produto, Usuario e Feedback
-
-│       │   └── service/      # regras de negócio e validações
-
-│       ├── resources/        # db.properties.example; db.properties local é ignorado
-
-│       └── webapp/
-
-│           ├── WEB-INF/web.xml
-
-│           ├── css/
-
-│           ├── feedback/
-
-│           ├── produto/
-
-│           ├── usuario/
-
-│           └── index.jsp
-
-├── arquivos-antigos/
-
-│   └── BANCO DE DADOS.sql    # script legado; não usar para instalar o banco atual
-
-├── schema.sql                # script oficial do banco feedback_db
-
+│   └── src/main/
+│       ├── java/br/com/feedbackprodutos/
+│       │   ├── config/
+│       │   ├── controller/
+│       │   ├── dao/
+│       │   ├── exception/
+│       │   ├── model/
+│       │   └── service/
+│       ├── resources/
+│       └── webapp/
+│           ├── css/
+│           ├── produto/
+│           ├── usuario/
+│           ├── feedback/
+│           ├── WEB-INF/
+│           └── index.jsp
+├── Dockerfile
+├── docker-compose.yml
+├── schema.sql
 ├── pom.xml
-
-├── Dockerfile                # configuração opcional
-
-├── docker-compose.yml        # configuração opcional
-
-└── .gitignore
-
-```
-
-O `pom.xml` fica na raiz e configura os diretórios Java, resources e webapp dentro de `feedback-produtos/`. Não há atualmente uma suíte de testes automatizados no projeto.
-
-## Banco de dados MySQL
-
-O script oficial é [`schema.sql`](./schema.sql). No MySQL Workbench, abra esse arquivo e execute o script conectado ao servidor MySQL. Ele cria o banco `feedback_db` (se ainda não existir) e as tabelas `Produtos`, `Usuarios` e `Feedback`, incluindo chaves estrangeiras e a restrição de nota de 1 a 5.
-
-O script usa `CREATE ... IF NOT EXISTS`; não apaga dados nem substitui tabelas existentes. Se já houver tabelas com estrutura diferente, compare-as com o script antes de qualquer alteração. O arquivo legado está em `arquivos-antigos/` e usa outro banco (`feedback_produtos`), por isso não deve ser usado.
-
-Configure a conexão por variáveis de ambiente. `DB_URL` é opcional e, se omitida, usa o endereço local padrão da aplicação; configure `DB_USER` e `DB_PASSWORD` para sua instalação. Não coloque credenciais reais em arquivos versionados.
-Executar com Docker 🐳
-O Docker é uma alternativa à execução local no Windows. Ele inicia o MySQL 8 e o Tomcat com a aplicação Java em containers, sem exigir a instalação manual desses serviços. Os dados do banco do Docker ficam separados do MySQL instalado no computador.
+└── README.md
+O pom.xml está na raiz do repositório e aponta para os arquivos Java e JSP dentro da pasta feedback-produtos/.
+5. Como executar com Docker (recomendado)
+Esta é a forma mais prática de executar o projeto para avaliação, pois o Docker Compose prepara dois serviços: o MySQL e a aplicação Java no Tomcat. Não é necessário instalar o MySQL, o Maven ou o Tomcat separadamente na máquina que vai executar os containers.
 Pré-requisitos
-- Docker Desktop instalado e em execução, com suporte ao Docker Compose.
-- Portas 8081 disponível no computador.
-- Terminal aberto na raiz do projeto, onde está o arquivo docker-compose.yml.
-1. Baixar o projeto (se ainda não estiver no computador)
+- Docker Desktop instalado e em execução (no Windows).
+- Docker Compose disponível, normalmente incluído no Docker Desktop.
+- Acesso à internet na primeira execução para baixar as imagens e dependências.
+Passo 1: obter o projeto
+Clone o repositório e entre na pasta principal:
 git clone https://github.com/Aplicacoes-para-internet/Feedback_produtos.git
 cd Feedback_produtos
-2. Construir e iniciar os containers
+Se você já baixou o projeto em ZIP, basta extrair os arquivos e abrir um terminal na pasta que contém docker-compose.yml.
+Passo 2: configurar a senha do banco (recomendado)
+O arquivo docker-compose.yml aceita as variáveis DB_PASSWORD e MYSQL_ROOT_PASSWORD. Para definir senhas próprias, crie um arquivo chamado .env na raiz do projeto:
+DB_PASSWORD=defina_uma_senha_local
+MYSQL_ROOT_PASSWORD=defina_outra_senha_local
+Esses valores são apenas exemplos: escolha suas próprias senhas. Não envie o arquivo .env ao GitHub. Se o arquivo não existir, o Compose utiliza senhas padrão de desenvolvimento definidas na configuração; elas não são adequadas para ambientes públicos ou de produção.
+Passo 3: construir e iniciar os containers
+Na raiz do projeto, execute:
 docker compose up --build -d
-Na primeira execução, o Docker baixa as imagens necessárias, compila a aplicação e cria o banco feedback_db. O arquivo schema.sql é aplicado na inicialização de um volume de banco novo. Aguarde o MySQL ficar saudável e o Tomcat iniciar.
-3. Verificar se os serviços estão ativos
+Esse comando constrói a aplicação Java com Maven, gera o arquivo WAR, prepara o Tomcat e inicia o MySQL. Na primeira execução, o banco é inicializado com o script schema.sql.
+
+Aguarde alguns instantes para que o MySQL fique saudável e a aplicação termine de iniciar.
+Passo 4: acessar o sistema
+Recurso	Endereço
+Página inicial (JSP)	http://localhost:8081/feedback-produtos/
+API de produtos	http://localhost:8081/feedback-produtos/api/produtos
+API de usuários	http://localhost:8081/feedback-produtos/api/usuarios
+API de avaliações	http://localhost:8081/feedback-produtos/api/feedbacks
+
+
+Por que a porta 8081? O Tomcat utiliza a porta 8080 dentro do container, mas o docker-compose.yml publica essa porta como 8081 no computador. Isso permite manter um Tomcat local na porta 8080, caso necessário.
+Passo 5: verificar se está funcionando
+Confira o estado dos serviços:
 docker compose ps
-O esperado é que o serviço db apareça como healthy e o serviço web como Up, com a porta 8081 do computador encaminhada para a porta 8080 do container.
-4. Acessar a aplicação
-- Interface JSP: http://localhost:8081/feedback-produtos/
-- API REST (produtos): http://localhost:8081/feedback-produtos/api/produtos
-- API REST (usuários): http://localhost:8081/feedback-produtos/api/usuarios
-- API REST (feedbacks): http://localhost:8081/feedback-produtos/api/feedbacks
-A porta 8081 é usada pelo Docker para não conflitar com o Tomcat local, que pode continuar usando a porta 8080. Para testar o CRUD documentado abaixo usando Docker, troque a variável PowerShell para:
-$baseUrl = "http://localhost:8081/feedback-produtos/api"
-5. Consultar os logs, se necessário
+Para acompanhar as mensagens da aplicação:
 docker compose logs -f web
-Para ver os logs do banco:
+Para verificar as mensagens do banco:
 docker compose logs -f db
 Use Ctrl+C para sair da visualização dos logs sem desligar os containers.
-6. Parar e iniciar novamente
-Para parar os containers sem apagar os dados do banco:
+Como parar ou reiniciar
+Para parar e remover os containers, preservando o volume do banco:
 docker compose down
 Para iniciar novamente:
 docker compose up -d
-Atenção: não use docker compose down -v para parar normalmente, pois a opção -v remove os volumes do projeto e pode apagar os dados persistidos no MySQL do Docker. Também não é necessário executar o schema.sql manualmente no MySQL local para usar a versão Docker.
-## Compilar e executar no Windows
+Os dados do MySQL ficam armazenados no volume Docker db_data. Não utilize docker compose down -v se quiser preservar os registros, pois a opção -v remove também os volumes do projeto.
+Observação: o schema.sql é aplicado automaticamente pelo MySQL apenas na inicialização de um diretório de dados vazio. Se o volume já existir, alterações posteriores nesse script não são executadas automaticamente.
 
-Abra o PowerShell na raiz do repositório, com JDK 17, Maven e MySQL instalados. Defina as variáveis no mesmo terminal usado para iniciar o Tomcat:
-
-```powershell
-
-Env: Db URL = "jdbc:mysql://localhost:3306/feedback_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Sao_Paulo"
-
-Env: Db User = "SEU_USUARIO_MYSQL"
-
+6. Como executar sem Docker (Windows)
+Esta alternativa é útil para quem deseja executar o projeto diretamente no computador.
+Pré-requisitos
+- JDK 17;
+- Maven;
+- MySQL em execução;
+- Apache Tomcat 10.1.x.
+Preparar o banco
+Abra o arquivo schema.sql no MySQL Workbench (ou outro cliente MySQL) e execute o script. Ele cria o banco feedback_db e as tabelas Produtos, Usuarios e Feedback, caso ainda não existam.
+Configurar a conexão
+No PowerShell, defina as variáveis de ambiente com os dados do seu MySQL:
+$env:DB_URL = "jdbc:mysql://localhost:3306/feedback_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Sao_Paulo"
+$env:DB_USER = "SEU_USUARIO_MYSQL"
 $senha = Read-Host "Senha do MySQL" -AsSecureString
-
-Env: Db Password = [System.Net.NetworkCredential]::new("", $senha).Password
-
-```
-
-Compile e empacote:
-
-```powershell
-
+$env:DB_PASSWORD = [System.Net.NetworkCredential]::new("", $senha).Password
+As variáveis devem estar disponíveis para o processo que inicia o Tomcat. Evite colocar credenciais reais no código ou em arquivos versionados.
+Compilar e publicar no Tomcat
+Na raiz do projeto:
 mvn clean package
-
-```
-
-O arquivo gerado é `target/feedback-produtos.war`. Para implantá-lo no Tomcat 10.1.59:
-
-```powershell
-
-$tomcatHome = "C:\apache-tomcat-10.1.59"
-
+O Maven gera o arquivo target/feedback-produtos.war. Copie esse arquivo para a pasta webapps do Tomcat e inicie o servidor:
+$tomcatHome = "C:\apache-tomcat-10.1.59" # ajuste para a pasta instalada
 Copy-Item .\target\feedback-produtos.war "$tomcatHome\webapps\"
-
 & "$tomcatHome\bin\startup.bat"
+Acesse http://localhost:8080/feedback-produtos/.
 
-```
-
-Após o Tomcat implantar o WAR, a aplicação fica disponível em:
-
-- Interface JSP: `http://localhost:8080/feedback-produtos/`
-
-- API REST: `http://localhost:8080/feedback-produtos/api`
-
-Para encerrar o Tomcat:
-
-```powershell
-
+Para encerrar:
 & "$tomcatHome\bin\shutdown.bat"
+7. API REST
+A API disponibiliza as operações básicas de CRUD para cada entidade.
+Método	Produtos	Usuários	Avaliações
+GET	/api/produtos	/api/usuarios	/api/feedbacks
+GET por ID	/api/produtos/{id}	/api/usuarios/{id}	/api/feedbacks/{id}
+POST	/api/produtos	/api/usuarios	/api/feedbacks
+PUT por ID	/api/produtos/{id}	/api/usuarios/{id}	/api/feedbacks/{id}
+DELETE por ID	/api/produtos/{id}	/api/usuarios/{id}	/api/feedbacks/{id}
 
-```
 
-As variáveis definidas no PowerShell não são permanentes: defina-as novamente em cada terminal usado para iniciar o Tomcat. A configuração alternativa por arquivo externo `db.properties` também é suportada pela aplicação; mantenha esse arquivo privado e fora do Git.
-
-## API REST
-
-Use a URL-base `http://localhost:8080/feedback-produtos/api` (ajuste o contexto se o nome do WAR mudar) e envie `Content-Type: application/json` em requisições POST e PUT.
-
-### Produtos
-
-| Método | Endpoint | Comportamento e sucesso |
-
-|---|---|---|
-
-| GET | `/api/produtos` | Lista produtos (`200`, array JSON). |
-
-| GET | `/api/produtos/{id}` | Consulta um produto (`200`, objeto JSON). |
-
-| POST | `/api/produtos` | Cria produto (`201`, objeto com ID gerado). |
-
-| PUT | `/api/produtos/{id}` | Atualiza produto (`200`, objeto atualizado). |
-
-| DELETE | `/api/produtos/{id}` | Exclui produto (`204`, sem corpo). |
-
-Corpo para POST e PUT:
-
-```json
+Os caminhos acima devem ser acrescentados à URL-base:
+- Docker: http://localhost:8081/feedback-produtos
+- Tomcat local: http://localhost:8080/feedback-produtos
+Para operações POST e PUT, envie os dados em JSON com o cabeçalho Content-Type: application/json.
+Exemplos de requisições
+Cadastrar um produto:
+POST /feedback-produtos/api/produtos
+Content-Type: application/json
 
 {
-
-  "nome": "Notebook",
-
-  "descricao": "Notebook para trabalho",
-
-  "preco": 3499.90
-
+  "nome": "Notebook",
+  "descricao": "Notebook para estudos",
+  "preco": 3499.90
 }
-
-```
-
-Resposta de exemplo:
-
-```json
+Cadastrar um usuário:
+POST /feedback-produtos/api/usuarios
+Content-Type: application/json
 
 {
-
-  "id": 1,
-
-  "nome": "Notebook",
-
-  "descricao": "Notebook para trabalho",
-
-  "preco": 3499.9
-
+  "nome": "Maria Silva",
+  "email": "maria@example.com"
 }
-
-```
-
-Nome não pode estar vazio e preço deve ser finito e não negativo. Descrição pode ser nula.
-
-### Usuários
-
-| Método | Endpoint | Comportamento e sucesso |
-
-|---|---|---|
-
-| GET | `/api/usuarios` | Lista usuários (`200`, array JSON). |
-
-| GET | `/api/usuarios/{id}` | Consulta um usuário (`200`, objeto JSON). |
-
-| POST | `/api/usuarios` | Cria usuário (`201`, objeto com ID gerado). |
-
-| PUT | `/api/usuarios/{id}` | Atualiza usuário (`200`, objeto atualizado). |
-
-| DELETE | `/api/usuarios/{id}` | Exclui usuário (`204`, sem corpo). |
-
-Corpo para POST e PUT:
-
-```json
+Cadastrar uma avaliação:
+POST /feedback-produtos/api/feedbacks
+Content-Type: application/json
 
 {
-
-  "nome": "Maria Silva",
-
-  "email": "maria@example.com"
-
+  "produto": { "id": 1 },
+  "usuario": { "id": 1 },
+  "nota": 5,
+  "comentario": "Produto atendeu às expectativas."
 }
+No exemplo da avaliação, os IDs 1 precisam corresponder a registros que realmente existam no banco.
+Respostas da API
+A API utiliza códigos HTTP para indicar o resultado das operações, como 200 para consultas e atualizações, 201 para cadastros e 204 para exclusões concluídas. Também pode retornar 400 para dados inválidos, 404 para registros não encontrados, 409 para conflitos de integridade e 500 para falhas internas.
 
-```
-
-Resposta de exemplo:
-
-```json
-
+As respostas de erro seguem o formato JSON:
 {
-
-  "id": 1,
-
-  "nome": "Maria Silva",
-
-  "email": "maria@example.com"
-
+  "erro": "Mensagem explicando o problema"
 }
-
-```
-
-Nome e e-mail são obrigatórios. O serviço valida o formato do e-mail e impede duplicatas; o banco também aplica unicidade.
-
-### Feedbacks
-
-| Método | Endpoint | Comportamento e sucesso |
-
-|---|---|---|
-
-| GET | `/api/feedbacks` | Lista feedbacks (`200`, array JSON). |
-
-| GET | `/api/feedbacks/{id}` | Consulta um feedback (`200`, objeto JSON). |
-
-| POST | `/api/feedbacks` | Cria feedback (`201`, objeto criado). |
-
-| PUT | `/api/feedbacks/{id}` | Atualiza feedback (`200`, objeto atualizado). |
-
-| DELETE | `/api/feedbacks/{id}` | Exclui feedback (`204`, sem corpo). |
-
-Em POST e PUT, informe os IDs do produto e do usuário:
-
-```json
-
-{
-
-  "produto": { "id": 1 },
-
-  "usuario": { "id": 1 },
-
-  "nota": 5,
-
-  "comentario": "Produto excelente, atendeu às expectativas."
-
-}
-
-```
-
-A resposta contém os objetos completos relacionados e `dataEnvio`:
-
-```json
-
-{
-
-  "id": 1,
-
-  "produto": {
-
-    "id": 1,
-
-    "nome": "Notebook",
-
-    "descricao": "Notebook para trabalho",
-
-    "preco": 3499.9
-
-  },
-
-  "usuario": {
-
-    "id": 1,
-
-    "nome": "Maria Silva",
-
-    "email": "maria@example.com"
-
-  },
-
-  "nota": 5,
-
-  "comentario": "Produto excelente, atendeu às expectativas.",
-
-  "dataEnvio": "2026-11-06T23:23:32"
-
-}
-
-```
-
-Produto e usuário devem existir; nota deve estar entre 1 e 5; comentário não pode estar vazio.
-
-### Respostas de erro
-
-As respostas de erro da API usam JSON no formato `{"erro":"mensagem"}`:
-
-| Status | Uso |
-
-|---|---|
-
-| `400 Bad Request` | ID inválido, JSON/Content-Type inválido ou dados que não passam pela validação. |
-
-| `404 Not Found` | Registro solicitado não existe ou a rota de criação não corresponde à coleção. |
-
-| `409 Conflict` | Conflito de integridade reportado pelo MySQL, por exemplo, exclusão impedida por feedback relacionado ou violação de unicidade no banco. E-mail duplicado detectado previamente pelo Service retorna `400`. |
-
-| `500 Internal Server Error` | Falha interna ou de acesso ao banco; a resposta não expõe detalhes internos. |
-
-## Teste manual do CRUD
-
-Com o MySQL e o Tomcat em execução, defina a URL-base no PowerShell:
-
-```powershell
-
-$baseUrl = "http://localhost:8080/feedback-produtos/api"
-
-```
-
-Execute os passos em ordem. Eles criam dados de demonstração e removem os registros criados; não use IDs existentes. Se a exclusão de um produto ou usuário relacionado for tentada antes de excluir o feedback, a chave estrangeira pode impedir a operação.
-
-```powershell
-
-# CREATE: produto
-
-$produto = Invoke-RestMethod -Method Post -Uri "$baseUrl/produtos" `
-
-  -ContentType "application/json" `
-
-  -Body '{"nome":"Notebook de teste","descricao":"CRUD manual","preco":100.00}'
-
-# READ: lista e consulta por ID
-
-Invoke-RestMethod -Method Get -Uri "$baseUrl/produtos"
-
-Invoke-RestMethod -Method Get -Uri "$baseUrl/produtos/$($produto.id)"
-
-# UPDATE: alterar o produto criado
-
-Invoke-RestMethod -Method Put -Uri "$baseUrl/produtos/$($produto.id)" `
-
-  -ContentType "application/json" `
-
-  -Body '{"nome":"Notebook atualizado","descricao":"CRUD manual","preco":120.00}'
-
-# CREATE e READ: usuário
-
-$usuario = Invoke-RestMethod -Method Post -Uri "$baseUrl/usuarios" `
-
-  -ContentType "application/json" `
-
-  -Body '{"nome":"Usuario de teste","email":"usuario-crud@example.com"}'
-
-Invoke-RestMethod -Method Get -Uri "$baseUrl/usuarios"
-
-Invoke-RestMethod -Method Get -Uri "$baseUrl/usuarios/$($usuario.id)"
-
-# UPDATE: usuário
-
-Invoke-RestMethod -Method Put -Uri "$baseUrl/usuarios/$($usuario.id)" `
-
-  -ContentType "application/json" `
-
-  -Body '{"nome":"Usuario atualizado","email":"usuario-crud@example.com"}'
-
-# CREATE e READ: feedback relacionado aos registros criados acima
-
-$feedbackBody = @{
-
-  produto = @{ id = $produto.id }
-
-  usuario = @{ id = $usuario.id }
-
-  nota = 5
-
-  comentario = "Feedback criado no teste manual."
-
-} | ConvertTo-Json -Depth 4
-
-$feedback = Invoke-RestMethod -Method Post -Uri "$baseUrl/feedbacks" `
-
-  -ContentType "application/json" -Body $feedbackBody
-
-Invoke-RestMethod -Method Get -Uri "$baseUrl/feedbacks"
-
-Invoke-RestMethod -Method Get -Uri "$baseUrl/feedbacks/$($feedback.id)"
-
-# UPDATE: feedback
-
-$feedbackBody = @{
-
-  produto = @{ id = $produto.id }
-
-  usuario = @{ id = $usuario.id }
-
-  nota = 4
-
-  comentario = "Feedback atualizado no teste manual."
-
-} | ConvertTo-Json -Depth 4
-
-Invoke-RestMethod -Method Put -Uri "$baseUrl/feedbacks/$($feedback.id)" `
-
-  -ContentType "application/json" -Body $feedbackBody
-
-# DELETE: exclua primeiro o feedback para respeitar as chaves estrangeiras
-
-Invoke-RestMethod -Method Delete -Uri "$baseUrl/feedbacks/$($feedback.id)"
-
-Invoke-RestMethod -Method Delete -Uri "$baseUrl/produtos/$($produto.id)"
-
-Invoke-RestMethod -Method Delete -Uri "$baseUrl/usuarios/$($usuario.id)"
-
-```
-
-Uma resposta `204` não tem corpo. Esse roteiro documenta como testar; ele não substitui a execução real das requisições contra a aplicação e o banco.
-
-## Publicar no GitHub
-
-Antes de publicar, revise `git status` e confirme que nenhum arquivo local de credenciais (`db.properties`, `.env` ou equivalente), dado pessoal ou artefato de build será enviado. O `.gitignore` exclui as configurações locais e as pastas `target/`. Nunca publique senhas no README, no código ou no histórico do Git.
-
-Após criar um repositório vazio no GitHub, configure o endereço remoto e publique a branch desejada:
-
-```powershell
-
-git remote add origin https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git
-
-git add .
-
-git status
-
-git commit -m "Documenta e prepara o projeto Feedback de Produtos"
-
-git push -u origin main
-
-```
-
-Se `origin` já existir, confira-o com `git remote -v` em vez de adicioná-lo novamente. Revise cuidadosamente o que será incluído antes de confirmar o commit e o push.
+8. Banco de dados
+O script oficial de criação do banco é o schema.sql, localizado na raiz do projeto. Ele define:
+Tabela	Principais informações
+Produtos	ID, nome, descrição e preço
+Usuarios	ID, nome e e-mail único
+Feedback	ID, produto, usuário, nota, comentário e data de envio
+
+
+A tabela Feedback possui chaves estrangeiras que relacionam cada avaliação a um produto e a um usuário. A nota é limitada ao intervalo de 1 a 5.
+
+O script utiliza CREATE ... IF NOT EXISTS, de modo que não apaga registros existentes durante sua execução normal. O arquivo antigo de banco, caso esteja presente em arquivos-antigos/, não deve substituir o schema.sql atual.
+9. Sugestão de roteiro para avaliação do projeto
+Para demonstrar o funcionamento ao professor:
+1. Inicie os containers com docker compose up --build -d.
+2. Abra a página inicial no navegador.
+3. Cadastre um produto e um usuário.
+4. Registre uma avaliação vinculada a eles.
+5. Consulte os dados pela interface e pelas rotas REST.
+6. Demonstre a edição e a exclusão, se a versão da interface instalada já contiver essas ações.
+7. Mostre a organização das camadas controller, service, dao e model.
+8. Finalize com docker compose down, preservando os dados.
+Esse roteiro apresenta tanto a experiência do usuário quanto os principais conceitos técnicos trabalhados na disciplina.
+10. Observações e limitações
+- O projeto é acadêmico, voltado à aprendizagem, e não deve ser tratado como um sistema pronto para produção.
+- Não há uma suíte de testes automatizados configurada no projeto analisado. A compilação e os testes manuais devem ser realizados antes da entrega.
+- Os dados persistem no volume do MySQL quando o projeto é executado com Docker.
+- Arquivos de credenciais locais, como .env e db.properties, não devem ser publicados no repositório.
+- A exclusão de um produto ou usuário pode ser bloqueada pelo banco quando existem avaliações vinculadas.
+11. Repositório
+GitHub: https://github.com/Aplicacoes-para-internet/Feedback_produtos
+Projeto desenvolvido para a disciplina de Aplicações para Internet, com foco na prática de Java web, APIs REST, arquitetura MVC, banco de dados relacional e execução com Docker.

@@ -51,6 +51,12 @@ public class ProdutoService {
         if (produto.getNome() == null || produto.getNome().isBlank()) {
             throw new IllegalArgumentException("O nome do produto é obrigatório.");
         }
+        if (produto.getNome().length() > 120) {
+            throw new IllegalArgumentException("O nome do produto deve ter no máximo 120 caracteres.");
+        }
+        if (produto.getDescricao() != null && produto.getDescricao().length() > 500) {
+            throw new IllegalArgumentException("A descrição deve ter no máximo 500 caracteres.");
+        }
         if (!Double.isFinite(produto.getPreco()) || produto.getPreco() < 0) {
             throw new IllegalArgumentException("O preço deve ser válido e não pode ser negativo.");
         }

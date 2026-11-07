@@ -3,6 +3,7 @@ package br.com.feedbackprodutos.controller;
 import br.com.feedbackprodutos.model.Feedback;
 import br.com.feedbackprodutos.model.Produto;
 import br.com.feedbackprodutos.model.Usuario;
+import br.com.feedbackprodutos.exception.RegistroNaoEncontradoException;
 import br.com.feedbackprodutos.service.FeedbackService;
 import br.com.feedbackprodutos.service.ProdutoService;
 import br.com.feedbackprodutos.service.UsuarioService;
@@ -23,15 +24,27 @@ public class FeedbackController extends ApiServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException {
         if (!isApiRequest(request)) {
-            try {
-                request.setAttribute("feedbacks", feedbackService.listar());
-                request.setAttribute("produtos", produtoService.listar());
-                request.setAttribute("usuarios", usuarioService.listar());
-            } catch (SQLException exception) {
-                request.setAttribute("erro", "Não foi possível carregar os feedbacks.");
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            if ("editar".equals(request.getParameter("acao"))) {
+                Integer id = formId(request.getParameter("id"));
+                try {
+                    Feedback feedback = id == null ? null : feedbackService.buscarPorId(id);
+                    if (feedback == null) {
+                        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                        request.setAttribute("erro", "Feedback não encontrado.");
+                        mostrarLista(request, response);
+                    } else {
+                        request.setAttribute("feedbackEditando", feedback);
+                        request.getRequestDispatcher("/feedback/editar.jsp").forward(request, response);
+                    }
+                } catch (SQLException exception) {
+                    getServletContext().log("Não foi possível carregar o feedback para edição.", exception);
+                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                    request.setAttribute("erro", "Não foi possível carregar o feedback para edição.");
+                    mostrarLista(request, response);
+                }
+                return;
             }
-            request.getRequestDispatcher("/feedback/listar.jsp").forward(request, response);
+            mostrarLista(request, response);
             return;
         }
 
@@ -59,17 +72,116 @@ public class FeedbackController extends ApiServlet {
         }
     }
 
+    private void mostrarLista(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException {
+        try {
+            request.setAttribute("feedbacks", feedbackService.listar());
+            request.setAttribute("produtos", produtoService.listar());
+            request.setAttribute("usuarios", usuarioService.listar());
+        } catch (SQLException exception) {
+            getServletContext().log("Não foi possível carregar os feedbacks.", exception);
+            request.setAttribute("erro", "Não foi possível carregar os feedbacks.");
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+        request.getRequestDispatcher("/feedback/listar.jsp").forward(request, response);
+    }
+
+    private Integer formId(String value) {
+        if (value == null || !value.matches("[1-9][0-9]*")) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(value);
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException {
         request.setCharacterEncoding("UTF-8");
         if (!isApiRequest(request)) {
+            String acao = request.getParameter("acao");
+            if ("excluir".equals(acao)) {
+                Integer id = formId(request.getParameter("id"));
+                if (id == null) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    request.setAttribute("erro", "ID do feedback inválido.");
+                    mostrarLista(request, response);
+                    return;
+                }
+                try {
+                    feedbackService.excluir(id);
+                    response.sendRedirect(request.getContextPath() + "/feedback?sucesso=Feedback+exclu%C3%ADdo");
+                } catch (RegistroNaoEncontradoException exception) {
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                    request.setAttribute("erro", exception.getMessage());
+                    mostrarLista(request, response);
+                } catch (SQLException exception) {
+                    getServletContext().log("Não foi possível excluir o feedback.", exception);
+                    request.setAttribute("erro", "Não foi possível excluir o feedback.");
+                    mostrarLista(request, response);
+                }
+                return;
+            }
+            if ("atualizar".equals(acao)) {
+                Integer id = formId(request.getParameter("id"));
+                if (id == null) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    request.setAttribute("erro", "ID do feedback inválido.");
+                    mostrarLista(request, response);
+                    return;
+                }
+                Feedback feedback = null;
+                try {
+                    feedback = feedbackService.buscarPorId(id);
+                    if (feedback == null) {
+                        throw new RegistroNaoEncontradoException("Feedback não encontrado.");
+                    }
+                    feedback.setNota(Integer.parseInt(request.getParameter("nota")));
+                    feedback.setComentario(request.getParameter("comentario"));
+                    feedbackService.atualizar(feedback);
+                    response.sendRedirect(request.getContextPath() + "/feedback?sucesso=Feedback+atualizado");
+                } catch (RegistroNaoEncontradoException exception) {
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                    request.setAttribute("erro", exception.getMessage());
+                    mostrarLista(request, response);
+                } catch (NumberFormatException exception) {
+                    feedback.setComentario(request.getParameter("comentario"));
+                    request.setAttribute("erro", "A nota deve ser um número entre 1 e 5.");
+                    request.setAttribute("feedbackEditando", feedback);
+                    request.getRequestDispatcher("/feedback/editar.jsp").forward(request, response);
+                } catch (IllegalArgumentException exception) {
+                    feedback.setComentario(request.getParameter("comentario"));
+                    request.setAttribute("erro", exception.getMessage());
+                    request.setAttribute("feedbackEditando", feedback);
+                    request.getRequestDispatcher("/feedback/editar.jsp").forward(request, response);
+                } catch (SQLException exception) {
+                    getServletContext().log("Não foi possível atualizar o feedback.", exception);
+                    if (feedback == null) {
+                        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                        request.setAttribute("erro", "Não foi possível carregar o feedback para edição.");
+                        mostrarLista(request, response);
+                    } else {
+                        feedback.setComentario(request.getParameter("comentario"));
+                        request.setAttribute("erro", "Não foi possível atualizar o feedback.");
+                        request.setAttribute("feedbackEditando", feedback);
+                        request.getRequestDispatcher("/feedback/editar.jsp").forward(request, response);
+                    }
+                }
+                return;
+            }
             try {
                 feedbackService.salvar(feedbackDoFormulario(request));
                 response.sendRedirect(request.getContextPath() + "/feedback?sucesso=Feedback+enviado");
-            } catch (IllegalArgumentException | SQLException exception) {
-                request.setAttribute("erro", "Não foi possível salvar o feedback: " + exception.getMessage());
-                doGet(request, response);
+            } catch (IllegalArgumentException exception) {
+                request.setAttribute("erro", exception.getMessage());
+                mostrarLista(request, response);
+            } catch (SQLException exception) {
+                getServletContext().log("Não foi possível salvar o feedback.", exception);
+                request.setAttribute("erro", "Não foi possível salvar o feedback.");
+                mostrarLista(request, response);
             }
             return;
         }
@@ -143,6 +255,7 @@ public class FeedbackController extends ApiServlet {
         } catch (NumberFormatException exception) {
             throw new IllegalArgumentException("Produto, usuário e nota devem ser IDs/números válidos.");
         }
+
     }
 
 }

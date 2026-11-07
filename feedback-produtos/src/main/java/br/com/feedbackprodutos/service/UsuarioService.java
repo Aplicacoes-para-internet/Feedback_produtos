@@ -51,11 +51,17 @@ public class UsuarioService {
         if (usuario.getNome() == null || usuario.getNome().isBlank()) {
             throw new IllegalArgumentException("O nome do usuário é obrigatório.");
         }
+        if (usuario.getNome().length() > 120) {
+            throw new IllegalArgumentException("O nome do usuário deve ter no máximo 120 caracteres.");
+        }
         if (usuario.getEmail() == null || usuario.getEmail().isBlank()) {
             throw new IllegalArgumentException("O e-mail do usuário é obrigatório.");
         }
 
         String email = usuario.getEmail().trim();
+        if (email.length() > 180) {
+            throw new IllegalArgumentException("O e-mail deve ter no máximo 180 caracteres.");
+        }
         if (!email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
             throw new IllegalArgumentException("Informe um e-mail válido.");
         }

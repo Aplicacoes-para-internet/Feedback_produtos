@@ -64,6 +64,9 @@ public class FeedbackService {
         if (feedback.getComentario() == null || feedback.getComentario().isBlank()) {
             throw new IllegalArgumentException("O comentário é obrigatório.");
         }
+        if (feedback.getComentario().length() > 1000) {
+            throw new IllegalArgumentException("O comentário deve ter no máximo 1000 caracteres.");
+        }
 
         if (produtoDAO.buscarPorId(feedback.getProduto().getId()) == null) {
             throw new RegistroNaoEncontradoException("Produto não encontrado.");
